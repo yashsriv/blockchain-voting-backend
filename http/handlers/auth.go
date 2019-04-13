@@ -76,6 +76,10 @@ func HandleLogin() gin.HandlerFunc {
 		ctx.SetCookie("username", username, 0, "", "", false, false)
 		ctx.SetCookie("timestamp", timestamp, 0, "", "", false, false)
 		ctx.SetCookie("auth", auth, 0, "", "", false, false)
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"username": username,
+		})
 	}
 }
 
