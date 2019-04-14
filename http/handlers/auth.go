@@ -90,7 +90,8 @@ func HandleLogin() gin.HandlerFunc {
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{
-			"token": tokenString,
+			"token":    tokenString,
+			"username": username,
 		})
 	}
 }
