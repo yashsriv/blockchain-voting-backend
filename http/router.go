@@ -17,7 +17,7 @@ func Router() *gin.Engine {
 	router.POST("/login", handlers.HandleLogin())
 	router.GET("/ping", handlers.AuthCheck(), func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
-			"pong": "Hello World",
+			"pong": ctx.GetString("username"),
 		})
 	})
 

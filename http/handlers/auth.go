@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/base64"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,15 +8,20 @@ import (
 	"strings"
 	"time"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/jlaffaye/ftp"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/sha3"
 )
 
 type loginRequest struct {
 	Username string `form:"username" json:"username" xml:"username" binding:"required"`
 	Password string `form:"password" json:"password" xml:"password" binding:"required"`
+}
+
+type jwtClaims struct {
+	Username string `json:"username"`
+	jwt.StandardClaims
 }
 
 func (req *loginRequest) verify(host string, port string) (bool, error) {
@@ -46,7 +50,7 @@ func (req *loginRequest) verify(host string, port string) (bool, error) {
 func HandleLogin() gin.HandlerFunc {
 	ftpHost := viper.GetString("ftp.host")
 	ftpPort := viper.GetString("ftp.port")
-	secret := viper.GetString("cookie.secret")
+	secret := []byte(viper.GetString("jwt.secret"))
 
 	return func(ctx *gin.Context) {
 		var request loginRequest
@@ -67,52 +71,70 @@ func HandleLogin() gin.HandlerFunc {
 		}
 
 		username := request.Username
-		timestamp := strconv.FormatInt(time.Now().Unix(), 10)
-		hashValue := []byte(fmt.Sprintf("%s:%s:%s", username, timestamp, secret))
-		hasher := sha3.New256()
-		hasher.Write(hashValue)
-		auth := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
+		currentTime := time.Now()
 
-		ctx.SetCookie("username", username, 0, "", "", false, false)
-		ctx.SetCookie("timestamp", timestamp, 0, "", "", false, false)
-		ctx.SetCookie("auth", auth, 0, "", "", false, false)
+		claims := jwtClaims{
+			username,
+			jwt.StandardClaims{
+				IssuedAt:  currentTime.Unix(),
+				ExpiresAt: currentTime.Add(time.Hour).Unix(),
+			},
+		}
+
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+		tokenString, err := token.SignedString(secret)
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 
 		ctx.JSON(http.StatusOK, gin.H{
-			"username": username,
+			"token": tokenString,
 		})
 	}
 }
 
 func AuthCheck() gin.HandlerFunc {
-	secret := viper.GetString("cookie.secret")
+	secret := []byte(viper.GetString("jwt.secret"))
 	return func(ctx *gin.Context) {
-		username, err := ctx.Cookie("username")
+		splitted := strings.Split(ctx.GetHeader("Authorization"), "Bearer ")
+		if len(splitted) == 1 {
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "credentials missing"})
+			return
+		}
+
+		reqToken := splitted[1]
+
+		token, err := jwt.ParseWithClaims(reqToken, &jwtClaims{}, func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", t.Header["alg"])
+			}
+			return secret, nil
+		})
+		if err != nil || !token.Valid {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error":  "credentials rejected",
+				"reason": err.Error(),
+			})
+			return
+		}
+
+		claims, ok := token.Claims.(*jwtClaims)
+		if !ok {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error":  "credentials rejected",
+				"reason": "claims object doesn't match expected",
+			})
+			return
+		}
+
+		err = claims.Valid()
 		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
+
 		}
 
-		timestamp, err := ctx.Cookie("timestamp")
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		auth, err := ctx.Cookie("auth")
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		hashValue := []byte(fmt.Sprintf("%s:%s:%s", username, timestamp, secret))
-		hasher := sha3.New256()
-		hasher.Write(hashValue)
-		expectedAuth := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-
-		if auth != expectedAuth {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "credentials rejected"})
-			return
-		}
+		ctx.Set("username", claims.Username)
 
 		ctx.Next()
 	}

@@ -6,5 +6,5 @@ ftp:
   host: "webhome.cc.iitk.ac.in"
   port: 21
 
-cookie:
+jwt:
   secret: "corridor-earthlike-defection"
