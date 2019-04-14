@@ -7,6 +7,11 @@ $ go version
 go version go1.12.3 linux/amd64
 ```
 
+Also redis is needs to be running:
+```
+$ docker run --rm -p 6379:6379 -e ALLOW_EMPTY_PASSWORD=yes bitnami/redis 
+```
+
 Then:
 ```
 $ go run ./cmd/server
