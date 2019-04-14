@@ -9,5 +9,11 @@ go version go1.12.3 linux/amd64
 
 Then:
 ```
-$ go run main.go
+$ go run ./cmd/server
+```
+
+## To run the command line client
+
+```
+$ go run ./cmd/contractor
 ```
