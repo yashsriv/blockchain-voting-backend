@@ -20,7 +20,9 @@ type loginRequest struct {
 }
 
 type jwtClaims struct {
-	Username string `json:"username"`
+	Username    string `json:"username"`
+	IsAdmin     bool   `json:"isAdmin"`
+	IsCandidate bool   `json:"isCandidate"`
 	jwt.StandardClaims
 }
 
@@ -50,7 +52,17 @@ func (req *loginRequest) verify(host string, port string) (bool, error) {
 func HandleLogin() gin.HandlerFunc {
 	ftpHost := viper.GetString("ftp.host")
 	ftpPort := viper.GetString("ftp.port")
+	ftpEnabled := viper.GetBool("ftp.enabled")
+
 	secret := []byte(viper.GetString("jwt.secret"))
+
+	admin := viper.GetString("admin.username")
+	candidatesList := viper.GetStringSlice("admin.candidates")
+
+	var candidates = make(map[string]bool)
+	for _, candidate := range candidatesList {
+		candidates[candidate] = true
+	}
 
 	return func(ctx *gin.Context) {
 		var request loginRequest
@@ -59,22 +71,27 @@ func HandleLogin() gin.HandlerFunc {
 			return
 		}
 
-		valid, err := request.verify(ftpHost, ftpPort)
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+		if ftpEnabled {
+			valid, err := request.verify(ftpHost, ftpPort)
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
 
-		if !valid {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			return
+			if !valid {
+				ctx.AbortWithStatus(http.StatusUnauthorized)
+				return
+			}
 		}
 
 		username := request.Username
 		currentTime := time.Now()
 
+		_, isCandidate := candidates[username]
 		claims := jwtClaims{
 			username,
+			username == admin,
+			isCandidate,
 			jwt.StandardClaims{
 				IssuedAt:  currentTime.Unix(),
 				ExpiresAt: currentTime.Add(time.Hour).Unix(),
@@ -90,8 +107,10 @@ func HandleLogin() gin.HandlerFunc {
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{
-			"token":    tokenString,
-			"username": username,
+			"token":       tokenString,
+			"username":    username,
+			"isAdmin":     username == admin,
+			"isCandidate": isCandidate,
 		})
 	}
 }
@@ -130,12 +149,9 @@ func AuthCheck() gin.HandlerFunc {
 			return
 		}
 
-		err = claims.Valid()
-		if err != nil {
-
-		}
-
 		ctx.Set("username", claims.Username)
+		ctx.Set("isAdmin", claims.IsAdmin)
+		ctx.Set("isCandidate", claims.IsCandidate)
 
 		ctx.Next()
 	}

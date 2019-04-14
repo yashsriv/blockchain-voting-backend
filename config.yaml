@@ -5,6 +5,20 @@ http:
 ftp:
   host: "webhome.cc.iitk.ac.in"
   port: 21
+  enabled: false
 
 jwt:
   secret: "corridor-earthlike-defection"
+
+admin:
+  username: "yashsriv"
+
+candidates:
+  - "milindl"
+  - "ssaha"
+
+redis:
+  network: tcp
+  host: localhost
+  port: 6379
+  pool: 10
