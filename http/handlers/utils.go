@@ -18,8 +18,6 @@ func GetAdminPrivKey() gin.HandlerFunc {
 				"error": err.Error(),
 			})
 		}
-		ctx.JSON(http.StatusOK, gin.H{
-			"encrypted-admin-privKey": adminPrivKey,
-		})
+		ctx.JSON(http.StatusOK, adminPrivKey)
 	}
 }
