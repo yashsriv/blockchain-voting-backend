@@ -191,18 +191,26 @@ func GetAllVotes(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		// Check whether each vote is valid as per blockchain.
 		// Also check whether the total number of votes is the same.
 		blockchainVoteLen, err := vc.GetNumVoters()
-		redisVoteLen := big.NewInt(int64(len(votes)))
-		votingCompromised := false
-		if err == nil && redisVoteLen.Cmp(blockchainVoteLen) != 0 {
-			votingCompromised = true
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
 		}
+		redisVoteLen := big.NewInt(int64(len(votes)))
+		votingCompromised := redisVoteLen.Cmp(blockchainVoteLen) != 0
 		for _, vote := range votes {
 			if votingCompromised {
 				break
 			}
 			verified, err := vc.VerifyVote(vote)
-			// skip in case of an error... Probably, that's a valid vote.
-			if err == nil && verified == false {
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
+			if verified == false {
 				votingCompromised = true
 			}
 		}
