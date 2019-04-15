@@ -6,10 +6,13 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"blockchain-voting/http/handlers"
+	"ethlib"
 )
 
 // Router is the root-level router used by the
 // server
+var VC *ethlib.VotingContractWrapper
+
 func Router() *gin.Engine {
 	// Logger and Recovery Middleware already loaded
 	router := gin.Default()
@@ -24,10 +27,10 @@ func Router() *gin.Engine {
 	router.GET("/platform-info", handlers.AuthCheck(), handlers.GetInfo())
 
 	// Voting handlers
-	router.GET("/get-all-votes", handlers.AuthCheck(), handlers.GetAllVotes())
-	router.POST("/end-voting", handlers.AuthCheck(), handlers.EndVoting())
-	router.POST("/start-voting", handlers.AuthCheck(), handlers.StartVoting())
-	router.POST("/vote", handlers.AuthCheck(), handlers.Vote())
+	router.GET("/get-all-votes", handlers.AuthCheck(), handlers.GetAllVotes(VC))
+	router.POST("/end-voting", handlers.AuthCheck(), handlers.EndVoting(VC))
+	router.POST("/start-voting", handlers.AuthCheck(), handlers.StartVoting(VC))
+	router.POST("/vote", handlers.AuthCheck(), handlers.Vote(VC))
 
 	// Get encrypted-admin-privKey
 	router.GET("/admin-privKey", handlers.AuthCheck(), handlers.GetAdminPrivKey())

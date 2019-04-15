@@ -11,14 +11,24 @@ jwt:
   secret: "corridor-earthlike-defection"
 
 admin:
-  username: "yashsriv"
+  username: "ssaha"
 
 candidates:
   - "milindl"
-  - "ssaha"
+  - "yashsriv"
 
 redis:
   network: tcp
   host: localhost
   port: 6379
   pool: 10
+
+wallet:
+  filename: "/home/subho/.ethereum/keystore/UTC--2019-04-15T16-36-21.760608231Z--784d9cb924e88d95d9aaa57aa56c932f6dd959fc"
+  password: "mywalletpassword"
+
+ethclient:
+  location: "https://ropsten.infura.io/v3/a34a52c7894e4852a4152d53bb9b9fd9"
+
+contract:
+  # address: "0xd6bf419Eb5b0b46C6Aa1A435e69aE5498Ad7D4EF"

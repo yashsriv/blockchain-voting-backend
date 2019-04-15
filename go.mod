@@ -3,6 +3,7 @@ module blockchain-voting
 go 1.12
 
 require (
+	ethlib v0.0.0-00010101000000-000000000000
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3 // indirect
@@ -19,3 +20,5 @@ require (
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 )
+
+replace ethlib => ../blockchain-voting-ethlib
