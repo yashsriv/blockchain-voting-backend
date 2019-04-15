@@ -224,3 +224,18 @@ func GetAllVotes(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		}
 	}
 }
+
+func GetAllVoters(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+		_ = vc
+		var voters []string
+		err := redis.Client.Do(radix.Cmd(&voters, "SMEMBERS", VotersList))
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
+		ctx.JSON(http.StatusOK, voters)
+	}
+}
