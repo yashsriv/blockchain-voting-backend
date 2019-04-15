@@ -13,6 +13,7 @@ import (
 
 const VotingStarted = "votingStarted"
 const VotingEnded = "votingEnded"
+const IsResultPublished = "resultPublished"
 
 func GetInfo() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -46,7 +47,7 @@ func GetInfo() gin.HandlerFunc {
 
 		// Get if voting has started
 		var votingStarted bool
-		err = redis.Client.Do(radix.Cmd(&votingStarted, "GET", "votingStarted"))
+		err = redis.Client.Do(radix.Cmd(&votingStarted, "GET", VotingStarted))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -56,7 +57,7 @@ func GetInfo() gin.HandlerFunc {
 
 		// Get if voting has ended
 		var votingEnded bool
-		err = redis.Client.Do(radix.Cmd(&votingEnded, "GET", "votingStarted"))
+		err = redis.Client.Do(radix.Cmd(&votingEnded, "GET", VotingEnded))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -66,7 +67,7 @@ func GetInfo() gin.HandlerFunc {
 
 		// Get if results have been published
 		var resultsPublished bool
-		err = redis.Client.Do(radix.Cmd(&resultsPublished, "GET", "votingStarted"))
+		err = redis.Client.Do(radix.Cmd(&resultsPublished, "GET", IsResultPublished))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),

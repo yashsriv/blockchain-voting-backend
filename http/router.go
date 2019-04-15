@@ -24,6 +24,7 @@ func Router() *gin.Engine {
 	router.GET("/platform-info", handlers.AuthCheck(), handlers.GetInfo())
 
 	// Voting handlers
+	router.POST("/start-voting", handlers.AuthCheck(), handlers.StartVoting())
 	router.POST("/vote", handlers.AuthCheck(), handlers.Vote())
 
 	router.GET("/ping", handlers.AuthCheck(), func(ctx *gin.Context) {
