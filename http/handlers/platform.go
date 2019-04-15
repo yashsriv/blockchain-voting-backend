@@ -85,31 +85,3 @@ func GetInfo() gin.HandlerFunc {
 		})
 	}
 }
-
-func StartVoting() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		username := ctx.GetString("username")
-		admin := viper.GetString("admin.username")
-
-		if admin != username {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "you are not admin",
-			})
-			return
-		}
-
-		err := redis.Client.Do(radix.Cmd(nil, "SET", VotingStarted, "true"))
-		if err != nil {
-			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
-		}
-
-		// TODO : perform the solidity transsactions to start the voting
-
-		ctx.JSON(http.StatusOK, gin.H{
-			"link": "todo://ethereum",
-		})
-
-	}
-}
