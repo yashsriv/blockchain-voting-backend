@@ -6,14 +6,15 @@ import (
 
 	"blockchain-voting/redis"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	radix "github.com/mediocregopher/radix/v3"
 )
 
 func GetInfo() gin.HandlerFunc {
-	func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
 		// Get admin pubKey from database
 		var adminKey string
-		err := client.Do(radix.Cmd(&adminKey, "GET", "admin-pub"))
+		err := redis.Client.Do(radix.Cmd(&adminKey, "GET", "admin-pub"))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -29,7 +30,7 @@ func GetInfo() gin.HandlerFunc {
 		for _, candidate := range candidates {
 			candidateMapKey := fmt.Sprintf("candidate-pub-%s", candidate)
 			var candidatePubKey string
-			err := client.Do(radix.Cmd(&candidatePubKey, "GET", candidateMapKey))
+			err = redis.Client.Do(radix.Cmd(&candidatePubKey, "GET", candidateMapKey))
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 					"error": err.Error(),
@@ -41,7 +42,7 @@ func GetInfo() gin.HandlerFunc {
 
 		// Get if voting has started
 		var votingStarted bool
-		err := client.Do(radix.Cmd(&votingStarted, "GET", "votingStarted"))
+		err = redis.Client.Do(radix.Cmd(&votingStarted, "GET", "votingStarted"))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -51,7 +52,7 @@ func GetInfo() gin.HandlerFunc {
 
 		// Get if voting has ended
 		var votingEnded bool
-		err := client.Do(radix.Cmd(&votingEnded, "GET", "votingStarted"))
+		err = redis.Client.Do(radix.Cmd(&votingEnded, "GET", "votingStarted"))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -61,7 +62,7 @@ func GetInfo() gin.HandlerFunc {
 
 		// Get if results have been published
 		var resultsPublished bool
-		err := client.Do(radix.Cmd(&resultsPublished, "GET", "votingStarted"))
+		err = redis.Client.Do(radix.Cmd(&resultsPublished, "GET", "votingStarted"))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
