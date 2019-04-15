@@ -25,7 +25,7 @@ func Vote() gin.HandlerFunc {
 			return
 		}
 
-		err := redis.Client.Do(radix.Cmd(nil, "RPUSH", request.Vote))
+		err := redis.Client.Do(radix.Cmd(nil, "RPUSH", votes, request.Vote))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
