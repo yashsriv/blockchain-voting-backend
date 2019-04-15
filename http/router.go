@@ -30,6 +30,9 @@ func Router() *gin.Engine {
 
 	// Get encrypted-admin-privKey
 	router.GET("/admin-privKey", handlers.AuthCheck(), handlers.GetAdminPrivKey())
+	// Get encrypted-(particular)candidate-privKey
+	router.GET("/candidate-privKey", handlers.AuthCheck(), handlers.GetCandidatePrivKey())
+
 	router.GET("/ping", handlers.AuthCheck(), func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"pong": ctx.GetString("username"),
