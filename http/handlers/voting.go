@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"blockchain-voting/redis"
-	"net/http"
 	"math/big"
+	"net/http"
 
 	"ethlib"
 
@@ -179,7 +179,6 @@ func EndVoting(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 
 func GetAllVotes(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		_ = vc
 		var votes []string
 		err := redis.Client.Do(radix.Cmd(&votes, "LRANGE", Votes, "0", "-1"))
 		if err != nil {
@@ -228,7 +227,6 @@ func GetAllVotes(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 func GetAllVoters(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
-		_ = vc
 		var voters []string
 		err := redis.Client.Do(radix.Cmd(&voters, "SMEMBERS", VotersList))
 		if err != nil {
@@ -236,6 +234,40 @@ func GetAllVoters(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 				"error": err.Error(),
 			})
 		}
-		ctx.JSON(http.StatusOK, voters)
+
+		// Check whether each vote is valid as per blockchain.
+		// Also check whether the total number of votes is the same.
+		blockchainVoteLen, err := vc.GetNumVoters()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		redisVoterLen := big.NewInt(int64(len(voters)))
+		votingCompromised := redisVoterLen.Cmp(blockchainVoteLen) != 0
+		for _, voter := range voters {
+			if votingCompromised {
+				break
+			}
+			verified, err := vc.VerifyVoter(voter)
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
+			if verified == false {
+				votingCompromised = true
+			}
+		}
+		if !votingCompromised {
+			ctx.JSON(http.StatusOK, voters)
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Voting has been compromised",
+			})
+		}
 	}
+
 }
