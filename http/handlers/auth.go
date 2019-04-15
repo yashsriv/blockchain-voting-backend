@@ -57,7 +57,7 @@ func HandleLogin() gin.HandlerFunc {
 	secret := []byte(viper.GetString("jwt.secret"))
 
 	admin := viper.GetString("admin.username")
-	candidatesList := viper.GetStringSlice("admin.candidates")
+	candidatesList := viper.GetStringSlice("candidates")
 
 	var candidates = make(map[string]bool)
 	for _, candidate := range candidatesList {
