@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	radix "github.com/mediocregopher/radix/v3"
+	"github.com/spf13/viper"
 )
 
 const votersList = "votersList"
@@ -34,7 +35,7 @@ func Vote() gin.HandlerFunc {
 		}
 
 		var votingStarted bool
-		err = redis.Client.Do(radix.Cmd(&votingStarted, "GET", "votingStarted"))
+		err = redis.Client.Do(radix.Cmd(&votingStarted, "GET", VotingStarted))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -43,7 +44,7 @@ func Vote() gin.HandlerFunc {
 		}
 
 		var votingEnded bool
-		err = redis.Client.Do(radix.Cmd(&votingEnded, "GET", "votingEnded"))
+		err = redis.Client.Do(radix.Cmd(&votingEnded, "GET", VotingEnded))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -79,6 +80,34 @@ func Vote() gin.HandlerFunc {
 		// if not voted
 		err = redis.Client.Do(radix.Cmd(nil, "SADD", votersList, ctx.GetString("username")))
 		// TODO: Perform solidity transaction to vote and publish the transaction to the user
+		ctx.JSON(http.StatusOK, gin.H{
+			"link": "todo://ethereum",
+		})
+
+	}
+}
+
+func EndVoting() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		username := ctx.GetString("username")
+		admin := viper.GetString("admin.username")
+
+		if admin != username {
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "you are not admin",
+			})
+			return
+		}
+
+		err := redis.Client.Do(radix.Cmd(nil, "SET", VotingEnded, "true"))
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
+
+		// TODO : perform the solidity transsactions to start the voting
+
 		ctx.JSON(http.StatusOK, gin.H{
 			"link": "todo://ethereum",
 		})
