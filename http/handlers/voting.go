@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-const votersList = "votersList"
-const votes = "votes"
+const VotersList = "votersList"
+const Votes = "votes"
 
 type VoteRequest struct {
 	Vote string `json:"vote"`
@@ -26,7 +26,7 @@ func Vote() gin.HandlerFunc {
 			return
 		}
 
-		err := redis.Client.Do(radix.Cmd(nil, "RPUSH", votes, request.Vote))
+		err := redis.Client.Do(radix.Cmd(nil, "RPUSH", Votes, request.Vote))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -62,7 +62,7 @@ func Vote() gin.HandlerFunc {
 
 		// Checking if the user has voted or not
 		var voted int
-		err = redis.Client.Do(radix.Cmd(&voted, "SISMEMBER", votersList))
+		err = redis.Client.Do(radix.Cmd(&voted, "SISMEMBER", VotersList))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -78,7 +78,7 @@ func Vote() gin.HandlerFunc {
 		}
 
 		// if not voted
-		err = redis.Client.Do(radix.Cmd(nil, "SADD", votersList, ctx.GetString("username")))
+		err = redis.Client.Do(radix.Cmd(nil, "SADD", VotersList, ctx.GetString("username")))
 		// TODO: Perform solidity transaction to vote and publish the transaction to the user
 		ctx.JSON(http.StatusOK, gin.H{
 			"link": "todo://ethereum",
@@ -140,5 +140,18 @@ func EndVoting() gin.HandlerFunc {
 			"link": "todo://ethereum",
 		})
 
+	}
+}
+
+func GetAllVotes() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var votes []string
+		err := redis.Client.Do(radix.Cmd(&votes, "LRANGE", Votes, "0", "-1"))
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
+		ctx.JSON(http.StatusOK, votes)
 	}
 }
