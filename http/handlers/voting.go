@@ -3,6 +3,7 @@ package handlers
 import (
 	"blockchain-voting/redis"
 	"net/http"
+	"math/big"
 
 	"ethlib"
 
@@ -80,7 +81,7 @@ func Vote(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		}
 
 		// Solidity vote interaction
-		err = vc.AddEncryptedVote(request.Vote, ctx.GetString("username"))
+		txhash, err := vc.AddEncryptedVote(request.Vote, ctx.GetString("username"))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -92,7 +93,7 @@ func Vote(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		err = redis.Client.Do(radix.Cmd(nil, "SADD", VotersList, ctx.GetString("username")))
 
 		ctx.JSON(http.StatusOK, gin.H{
-			"link": "todo://ethereum",
+			"link": txhash,
 		})
 
 	}
@@ -127,7 +128,7 @@ func StartVoting(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		}
 
 		// TODO : perform the solidity transsactions to start the voting
-		err = vc.StartVoting()
+		txhash, err := vc.StartVoting()
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -136,7 +137,7 @@ func StartVoting(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{
-			"link": "todo://ethereum",
+			"link": txhash,
 		})
 
 	}
@@ -162,7 +163,7 @@ func EndVoting(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		}
 
 		// TODO : perform the solidity transsactions to start the voting
-		err = vc.StopVoting()
+		txhash, err := vc.StopVoting()
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -170,7 +171,7 @@ func EndVoting(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{
-			"link": "todo://ethereum",
+			"link": txhash,
 		})
 
 	}
@@ -186,6 +187,32 @@ func GetAllVotes(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 				"error": err.Error(),
 			})
 		}
-		ctx.JSON(http.StatusOK, votes)
+
+		// Check whether each vote is valid as per blockchain.
+		// Also check whether the total number of votes is the same.
+		blockchainVoteLen, err := vc.GetNumVoters()
+		redisVoteLen := big.NewInt(int64(len(votes)))
+		votingCompromised := false
+		if err == nil && redisVoteLen.Cmp(blockchainVoteLen) != 0 {
+			votingCompromised = true
+		}
+		for _, vote := range votes {
+			if votingCompromised {
+				break
+			}
+			verified, err := vc.VerifyVote(vote)
+			// skip in case of an error... Probably, that's a valid vote.
+			if err == nil && verified == false {
+				votingCompromised = true
+			}
+		}
+		if !votingCompromised {
+			ctx.JSON(http.StatusOK, votes)
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Voting has been compromised",
+			})
+
+		}
 	}
 }
