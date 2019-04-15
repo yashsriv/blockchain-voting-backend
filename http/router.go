@@ -23,6 +23,9 @@ func Router() *gin.Engine {
 	// Get Platform info
 	router.GET("/platform-info", handlers.GetInfo())
 
+	// Voting handlers
+	router.POST("/vote", handlers.Vote())
+
 	router.GET("/ping", handlers.AuthCheck(), func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"pong": ctx.GetString("username"),
