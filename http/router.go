@@ -20,6 +20,9 @@ func Router() *gin.Engine {
 	// Register admins and candidates
 	router.POST("/register", handlers.AuthCheck(), handlers.Register())
 
+	// Get Platform info
+	router.GET("/platform-info", handlers.GetInfo())
+
 	router.GET("/ping", handlers.AuthCheck(), func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"pong": ctx.GetString("username"),
