@@ -11,8 +11,8 @@ import (
 )
 
 type registerRequest struct {
-	PrivateKey string `json:"public"`
-	PublicKey  string `json:"private"`
+	PrivateKey string `json:"private"`
+	PublicKey  string `json:"public"`
 }
 
 func Register() gin.HandlerFunc {

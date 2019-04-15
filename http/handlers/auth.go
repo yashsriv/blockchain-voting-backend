@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"blockchain-voting/redis"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/jlaffaye/ftp"
+	radix "github.com/mediocregopher/radix/v3"
 	"github.com/spf13/viper"
 )
 
@@ -87,10 +89,11 @@ func HandleLogin() gin.HandlerFunc {
 		username := request.Username
 		currentTime := time.Now()
 
+		isAdmin := username == admin
 		_, isCandidate := candidates[username]
 		claims := jwtClaims{
 			username,
-			username == admin,
+			isAdmin,
 			isCandidate,
 			jwt.StandardClaims{
 				IssuedAt:  currentTime.Unix(),
@@ -106,11 +109,27 @@ func HandleLogin() gin.HandlerFunc {
 			return
 		}
 
+		var isRegistered = true
+		if isAdmin || isCandidate {
+			var key string
+			if isAdmin {
+				key = "admin-pub"
+			} else {
+				key = fmt.Sprintf("candidate-pub-%s", username)
+			}
+			var pubKey string
+			err := redis.Client.Do(radix.Cmd(&pubKey, "GET", key))
+			if err != nil || pubKey == "" {
+				isRegistered = false
+			}
+		}
+
 		ctx.JSON(http.StatusOK, gin.H{
-			"token":       tokenString,
-			"username":    username,
-			"isAdmin":     username == admin,
-			"isCandidate": isCandidate,
+			"token":        tokenString,
+			"username":     username,
+			"isAdmin":      isAdmin,
+			"isCandidate":  isCandidate,
+			"isRegistered": isRegistered,
 		})
 	}
 }
