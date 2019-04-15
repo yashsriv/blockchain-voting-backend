@@ -27,6 +27,8 @@ func Router() *gin.Engine {
 	router.POST("/start-voting", handlers.AuthCheck(), handlers.StartVoting())
 	router.POST("/vote", handlers.AuthCheck(), handlers.Vote())
 
+	// Get encrypted-admin-privKey
+	router.GET("admin-privKey", handlers.AuthCheck(), handlers.GetAdminPrivKey())
 	router.GET("/ping", handlers.AuthCheck(), func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
 			"pong": ctx.GetString("username"),
