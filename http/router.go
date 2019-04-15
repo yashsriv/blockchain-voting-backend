@@ -21,10 +21,10 @@ func Router() *gin.Engine {
 	router.POST("/register", handlers.AuthCheck(), handlers.Register())
 
 	// Get Platform info
-	router.GET("/platform-info", handlers.GetInfo())
+	router.GET("/platform-info", handlers.AuthCheck(), handlers.GetInfo())
 
 	// Voting handlers
-	router.POST("/vote", handlers.Vote())
+	router.POST("/vote", handlers.AuthCheck(), handlers.Vote())
 
 	router.GET("/ping", handlers.AuthCheck(), func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
