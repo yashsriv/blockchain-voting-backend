@@ -175,3 +175,15 @@ func AuthCheck() gin.HandlerFunc {
 		ctx.Next()
 	}
 }
+
+func AdminCheck() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		isAdmin := ctx.GetBool("isAdmin")
+		if !isAdmin {
+			ctx.AbortWithStatus(http.StatusForbidden)
+			return
+		}
+
+		ctx.Next()
+	}
+}

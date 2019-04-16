@@ -29,10 +29,10 @@ func Router() *gin.Engine {
 	// Voting handlers
 	router.GET("/all-votes", handlers.AuthCheck(), handlers.GetAllVotes(VC))
 	router.GET("/all-voters", handlers.AuthCheck(), handlers.GetAllVoters(VC))
-	router.POST("/end-voting", handlers.AuthCheck(), handlers.EndVoting(VC))
-	router.POST("/start-voting", handlers.AuthCheck(), handlers.StartVoting(VC))
+	router.POST("/start-voting", handlers.AuthCheck(), handlers.AdminCheck(), handlers.StartVoting(VC))
+	router.POST("/end-voting", handlers.AuthCheck(), handlers.AdminCheck(), handlers.EndVoting(VC))
 	router.POST("/vote", handlers.AuthCheck(), handlers.Vote(VC))
-	router.POST("/publish-results", handlers.AuthCheck(), handlers.PublishResults(VC))
+	router.POST("/publish-results", handlers.AuthCheck(), handlers.AdminCheck(), handlers.PublishResults(VC))
 
 	// Get encrypted-admin-privKey
 	router.GET("/admin-privKey", handlers.AuthCheck(), handlers.GetAdminPrivKey())

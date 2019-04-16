@@ -9,7 +9,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	radix "github.com/mediocregopher/radix/v3"
-	"github.com/spf13/viper"
 )
 
 const VotersList = "votersList"
@@ -110,16 +109,6 @@ func Vote(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 
 func StartVoting(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		username := ctx.GetString("username")
-		admin := viper.GetString("admin.username")
-
-		if admin != username {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "you are not admin",
-			})
-			return
-		}
-
 		err := redis.Client.Do(radix.Cmd(nil, "SET", VotingStarted, "1"))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -154,16 +143,6 @@ func StartVoting(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 
 func EndVoting(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		username := ctx.GetString("username")
-		admin := viper.GetString("admin.username")
-
-		if admin != username {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": "you are not admin",
-			})
-			return
-		}
-
 		err := redis.Client.Do(radix.Cmd(nil, "SET", VotingEnded, "1"))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
