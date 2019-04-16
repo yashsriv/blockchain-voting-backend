@@ -294,7 +294,7 @@ func PublishResults(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 
 		var txhash string
 		if votingEnded == "1" {
-			txhash, err = vc.PublishResult(payload)
+			txhash, err = vc.PublishResults(payload)
 			if err != nil {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 					"error": err.Error(),
