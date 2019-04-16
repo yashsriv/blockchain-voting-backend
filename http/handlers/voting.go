@@ -64,7 +64,7 @@ func Vote(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		}
 
 		// Checking if the user has voted or not
-		var voted int
+		var voted string
 		err = redis.Client.Do(radix.Cmd(&voted, "SISMEMBER", VotersList, ctx.GetString("username")))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -73,9 +73,9 @@ func Vote(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 			return
 		}
 
-		if voted == 1 {
-			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-				"error": err.Error(),
+		if voted == "1" {
+			ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{
+				"error": "already voted",
 			})
 			return
 		}
