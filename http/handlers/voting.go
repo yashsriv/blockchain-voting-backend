@@ -301,6 +301,12 @@ func PublishResults(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 				})
 				return
 			}
+			err = redis.Client.Do(radix.Cmd(nil, "SET", IsResultPublished, txhash))
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+			}
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{

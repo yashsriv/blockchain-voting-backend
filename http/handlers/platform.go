@@ -67,7 +67,7 @@ func GetInfo(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 		}
 
 		// Get if results have been published
-		var resultsPublished bool
+		var resultsPublished string
 		err = redis.Client.Do(radix.Cmd(&resultsPublished, "GET", IsResultPublished))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
