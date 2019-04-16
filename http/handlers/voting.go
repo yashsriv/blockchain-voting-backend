@@ -271,3 +271,42 @@ func GetAllVoters(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 	}
 
 }
+
+func PublishResults(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var payload string
+		var err error
+		if err = ctx.ShouldBindJSON(&payload); err != nil {
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		var votingEnded string
+		err = redis.Client.Do(radix.Cmd(&votingEnded, "GET", VotingEnded))
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		var txhash string
+		if votingEnded == "1" {
+			txhash, err = vc.PublishResult(payload)
+			if err != nil {
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"link": txhash,
+		})
+
+	}
+
+}
