@@ -186,41 +186,41 @@ func GetAllVotes(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 				"error": err.Error(),
 			})
 		}
+		ctx.JSON(http.StatusOK, votes)
 
 		// Check whether each vote is valid as per blockchain.
 		// Also check whether the total number of votes is the same.
-		blockchainVoteLen, err := vc.GetNumVoters()
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
-			return
-		}
-		redisVoteLen := big.NewInt(int64(len(votes)))
-		votingCompromised := redisVoteLen.Cmp(blockchainVoteLen) != 0
-		for _, vote := range votes {
-			if votingCompromised {
-				break
-			}
-			verified, err := vc.VerifyVote(vote)
-			if err != nil {
-				ctx.JSON(http.StatusInternalServerError, gin.H{
-					"error": err.Error(),
-				})
-				return
-			}
-			if verified == false {
-				votingCompromised = true
-			}
-		}
-		if !votingCompromised {
-			ctx.JSON(http.StatusOK, votes)
-		} else {
-			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Voting has been compromised",
-			})
+		// blockchainVoteLen, err := vc.GetNumVoters()
+		// if err != nil {
+		// 	ctx.JSON(http.StatusInternalServerError, gin.H{
+		// 		"error": err.Error(),
+		// 	})
+		// 	return
+		// }
+		// redisVoteLen := big.NewInt(int64(len(votes)))
+		// votingCompromised := redisVoteLen.Cmp(blockchainVoteLen) != 0
+		// for _, vote := range votes {
+		// 	if votingCompromised {
+		// 		break
+		// 	}
+		// 	verified, err := vc.VerifyVote(vote)
+		// 	if err != nil {
+		// 		ctx.JSON(http.StatusInternalServerError, gin.H{
+		// 			"error": err.Error(),
+		// 		})
+		// 		return
+		// 	}
+		// 	if verified == false {
+		// 		votingCompromised = true
+		// 	}
+		// }
+		// if !votingCompromised {
+		// } else {
+		// 	ctx.JSON(http.StatusInternalServerError, gin.H{
+		// 		"error": "Voting has been compromised",
+		// 	})
 
-		}
+		// }
 	}
 }
 
