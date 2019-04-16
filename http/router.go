@@ -24,7 +24,7 @@ func Router() *gin.Engine {
 	router.POST("/register", handlers.AuthCheck(), handlers.Register())
 
 	// Get Platform info
-	router.GET("/platform-info", handlers.AuthCheck(), handlers.GetInfo())
+	router.GET("/platform-info", handlers.AuthCheck(), handlers.GetInfo(VC))
 
 	// Voting handlers
 	router.GET("/all-votes", handlers.AuthCheck(), handlers.GetAllVotes(VC))
@@ -32,7 +32,7 @@ func Router() *gin.Engine {
 	router.POST("/end-voting", handlers.AuthCheck(), handlers.EndVoting(VC))
 	router.POST("/start-voting", handlers.AuthCheck(), handlers.StartVoting(VC))
 	router.POST("/vote", handlers.AuthCheck(), handlers.Vote(VC))
-	router.POST("/publish-results", handlers.AuthCheck(), handlers.PublishResult(VC))
+	router.POST("/publish-results", handlers.AuthCheck(), handlers.PublishResults(VC))
 
 	// Get encrypted-admin-privKey
 	router.GET("/admin-privKey", handlers.AuthCheck(), handlers.GetAdminPrivKey())

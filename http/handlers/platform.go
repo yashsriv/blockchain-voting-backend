@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"blockchain-voting/redis"
+	"ethlib"
 
 	"github.com/gin-gonic/gin"
 	radix "github.com/mediocregopher/radix/v3"
@@ -15,7 +16,7 @@ const VotingStarted = "votingStarted"
 const VotingEnded = "votingEnded"
 const IsResultPublished = "resultPublished"
 
-func GetInfo() gin.HandlerFunc {
+func GetInfo(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// Get admin pubKey from database
 		var adminKey string
@@ -77,6 +78,7 @@ func GetInfo() gin.HandlerFunc {
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"adminKey":         adminKey,
+			"address":          vc.Address,
 			"candidateKeys":    candidateKeys,
 			"candidates":       candidates,
 			"votingStarted":    votingStarted,

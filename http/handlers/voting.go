@@ -14,6 +14,7 @@ import (
 
 const VotersList = "votersList"
 const Votes = "votes"
+const VoteHashes = "vote-hashes"
 
 type VoteRequest struct {
 	Vote string `json:"vote"`
@@ -82,6 +83,14 @@ func Vote(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 
 		// Solidity vote interaction
 		txhash, err := vc.AddEncryptedVote(request.Vote, ctx.GetString("username"))
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		err = redis.Client.Do(radix.Cmd(nil, "RPUSH", VoteHashes, txhash))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -180,13 +189,24 @@ func EndVoting(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 func GetAllVotes(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var votes []string
+		var voteHashes []string
 		err := redis.Client.Do(radix.Cmd(&votes, "LRANGE", Votes, "0", "-1"))
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 		}
-		ctx.JSON(http.StatusOK, votes)
+		err = redis.Client.Do(radix.Cmd(&voteHashes, "LRANGE", VoteHashes, "0", "-1"))
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"votes":  votes,
+			"hashes": voteHashes,
+		})
 
 		// Check whether each vote is valid as per blockchain.
 		// Also check whether the total number of votes is the same.
@@ -274,14 +294,15 @@ func GetAllVoters(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 
 func PublishResults(vc *ethlib.VotingContractWrapper) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		var payload string
-		var err error
-		if err = ctx.ShouldBindJSON(&payload); err != nil {
-			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+		payloadBytes, err := ctx.GetRawData()
+		if err != nil {
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
+
+		payload := string(payloadBytes)
 
 		var votingEnded string
 		err = redis.Client.Do(radix.Cmd(&votingEnded, "GET", VotingEnded))
